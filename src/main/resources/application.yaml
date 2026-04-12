@@ -1,3 +1,5 @@
 spring:
   application:
     name: ZAAK_Test
+  mongodb:
+    uri: mongodb://localhost:27017/monitoring
