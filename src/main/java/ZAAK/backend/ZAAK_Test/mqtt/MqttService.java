@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 
 @Service
 @Slf4j
@@ -23,7 +24,7 @@ public class MqttService {
     private MqttClient client;
 
     private final String MQTT_URL = System.getenv().getOrDefault("MQTT_URL", "tcp://localhost:1884");
-    private final String TOPIC = "factory/machine/+/sensos";
+    private final String TOPIC = "factory/machine/+/sensors";
 
     @PostConstruct
     public void init() {
@@ -54,7 +55,7 @@ public class MqttService {
 
             log.info("Connected to MQTT broker: {}", MQTT_URL);
 
-            client.subscribe(TOPIC, (topic, message) -> handleMessage(topic, message));
+            client.subscribe(TOPIC);
 
             log.info("Subscribed to topic: {}", TOPIC);
 
@@ -66,8 +67,6 @@ public class MqttService {
     private void handleMessage(String topic, MqttMessage message) {
         try {
             String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
-            log.info("MQTT raw message received. topic={} qos={} retained={} payload={}",
-                    topic, message.getQos(), message.isRetained(), payload);
 
             // 🔥 Extract machineId from topic
             String[] parts = topic.split("/");
@@ -76,11 +75,9 @@ public class MqttService {
             // 🔥 Parse JSON (use Jackson)
             JsonNode node = objectMapper.readTree(payload);
 
-            String resolvedId =
-                    machineIdFromTopic != null ? machineIdFromTopic :
-                            node.has("machineId") ? node.get("machineId").asText() :
-                                    node.has("id") ? node.get("id").asText() :
-                                            null;
+            String resolvedId = machineIdFromTopic != null
+                    ? machineIdFromTopic
+                    : firstText(node, "machineId", "id");
 
             if (resolvedId == null) {
                 log.warn("Ignored MQTT message without machineId. topic={} payload={}", topic, payload);
@@ -90,22 +87,101 @@ public class MqttService {
             MqttSensorData data = new MqttSensorData();
             data.setMachineId(resolvedId);
 
-            if (node.has("name")) data.setName(node.get("name").asText());
-            if (node.has("type")) data.setType(node.get("type").asText());
-            if (node.has("temperature")) data.setTemperature(node.get("temperature").asDouble());
-            if (node.has("vibration")) data.setVibration(node.get("vibration").asDouble());
-            if (node.has("pressure")) data.setPressure(node.get("pressure").asDouble());
-            if (node.has("status")) data.setStatus(node.get("status").asText());
-
-            data.setTimestamp(System.currentTimeMillis());
+            data.setName(firstText(node, "name"));
+            data.setType(firstText(node, "type"));
+            data.setLocation(firstText(node, "location"));
+            data.setTemperature(firstDouble(node, "temperature"));
+            data.setVibration(firstDouble(node, "vibration"));
+            data.setPressure(firstDouble(node, "pressure"));
+            data.setStatus(firstText(node, "status"));
+            data.setLastMaintenance(firstText(node, "lastMaintenance"));
+            data.setNextMaintenance(firstText(node, "nextMaintenance"));
+            data.setInstallDate(firstText(node, "installDate"));
+            data.setModel(firstText(node, "model"));
+            data.setManufacturer(firstText(node, "manufacturer"));
+            data.setDescription(firstText(node, "description"));
+            data.setTimestamp(firstTimestamp(node));
 
             // 🔥 CORE PIPELINE (same as NestJS Subject.next())
-            log.info("MQTT normalized data: {}", data);
             machineService.processSensorData(data);
 
         } catch (Exception e) {
             log.error("Failed to parse MQTT message from topic={}: {}", topic, e.getMessage(), e);
         }
+    }
+
+    private String firstText(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode match = findField(node, fieldName);
+            if (match != null && !match.isNull()) {
+                if (match.isValueNode()) {
+                    return match.asText();
+                }
+                return match.toString();
+            }
+        }
+        return null;
+    }
+
+    private Double firstDouble(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode match = findField(node, fieldName);
+            if (match != null && match.isNumber()) {
+                return match.asDouble();
+            }
+            if (match != null && match.isTextual()) {
+                try {
+                    return Double.parseDouble(match.asText());
+                } catch (NumberFormatException ignored) {
+                    // Ignore invalid numeric text and continue searching.
+                }
+            }
+        }
+        return null;
+    }
+
+    private Object firstTimestamp(JsonNode node) {
+        JsonNode match = findField(node, "timestamp");
+        if (match == null || match.isNull()) {
+            return System.currentTimeMillis();
+        }
+        if (match.isNumber()) {
+            return match.numberValue();
+        }
+        if (match.isValueNode()) {
+            return match.asText();
+        }
+        return match.toString();
+    }
+
+    private JsonNode findField(JsonNode node, String fieldName) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+
+        if (node.isObject()) {
+            JsonNode direct = node.get(fieldName);
+            if (direct != null) {
+                return direct;
+            }
+
+            Iterator<JsonNode> children = node.elements();
+            while (children.hasNext()) {
+                JsonNode match = findField(children.next(), fieldName);
+                if (match != null) {
+                    return match;
+                }
+            }
+        } else if (node.isArray()) {
+            for (JsonNode child : node) {
+                JsonNode match = findField(child, fieldName);
+                if (match != null) {
+                    return match;
+                }
+            }
+        }
+
+        return null;
     }
 
     @PreDestroy

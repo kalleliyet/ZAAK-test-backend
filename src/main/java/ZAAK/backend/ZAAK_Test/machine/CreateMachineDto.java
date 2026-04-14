@@ -1,17 +1,12 @@
 package ZAAK.backend.ZAAK_Test.machine;
 
 import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
 import java.util.List;
 
 @Data
-@Document(collection = "machines")
-public class Machine {
 
-    @Id
+public class CreateMachineDto {
     private String machineId;
 
     private String name;
@@ -31,4 +26,8 @@ public class Machine {
     private String model;
     private String manufacturer;
     private String description;
+
+    private Object timestamp;
+
 }
+
