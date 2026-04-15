@@ -29,48 +29,25 @@ public class MachineService {
 
     public Machine createFromSensorData(MqttSensorData dto) {
 
-        return machineRepository.findById(dto.getMachineId())
-                .orElseGet(() -> {
-                    machineRepository.save(toMachine(dto));
-                    log.info("creating: {}", dto);
-                    return null;
-                });
+        if (dto.getMachineId() == null) {
+            throw new IllegalArgumentException("MachineId is required");
+        }
 
+        return machineRepository.findById(dto.getMachineId())
+                .orElseGet(() -> machineRepository.save(toMachine(dto)));
     }
 
     public void processSensorData(MqttSensorData data) {
         // Create machine if not found in BD
         Machine machine = createFromSensorData(data);
-
-
-
-        // 🔥 ALERT LOGIC
-        handleAlerts(machine, result);
-
-
-        /*
-        // 🔥 WEBSOCKET BROADCAST
-        publisher.sendMachineUpdate(getAllRealtime());
-        return payload;*/
-    }
-
-    public /*List<MachineRealtimePayload>*/ void getAllRealtime() {
-      //  return new ArrayList<>(machinesData.values());
     }
 
     private Machine toMachine(MqttSensorData dto) {
         Machine machine = new Machine();
-        machine.setMachineId(dto.getMachineId());
+        machine.setId(dto.getMachineId());
         machine.setName(dto.getName());
-        machine.setType(dto.getType());
         machine.setLocation(dto.getLocation());
-        machine.setTemperature(dto.getTemperature());
-        machine.setVibration(dto.getVibration());
-        machine.setPressure(dto.getPressure());
         machine.setStatus(dto.getStatus());
-        machine.setLastMaintenance(dto.getLastMaintenance());
-        machine.setNextMaintenance(dto.getNextMaintenance());
-        machine.setInstallDate(dto.getInstallDate());
         machine.setModel(dto.getModel());
         machine.setManufacturer(dto.getManufacturer());
         machine.setDescription(dto.getDescription());

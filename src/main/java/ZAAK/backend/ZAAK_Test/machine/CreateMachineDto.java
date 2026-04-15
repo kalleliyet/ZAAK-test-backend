@@ -2,32 +2,27 @@ package ZAAK.backend.ZAAK_Test.machine;
 
 import lombok.Data;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Data
 
 public class CreateMachineDto {
-    private String machineId;
+    private String id;
 
     private String name;
-    private String type;
     private String location;
-
-    private Double temperature;
-    private Double vibration;
-    private Double pressure;
-
     private String status;
 
-    private String lastMaintenance;
-    private String nextMaintenance;
-    private String installDate;
+    private LocalDate installDate;
+    private LocalDate lastMaintenance;
+    private LocalDate nextMaintenance;
 
     private String model;
     private String manufacturer;
     private String description;
 
-    private Object timestamp;
+    // Reference to MachineType
+    private String machineTypeId;
 
 }
 
