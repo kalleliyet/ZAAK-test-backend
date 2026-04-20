@@ -3,3 +3,7 @@ spring:
     name: ZAAK_Test
   mongodb:
     uri: mongodb://localhost:27017/zaak
+  data:
+    redis:
+      host: localhost
+      port: 6379

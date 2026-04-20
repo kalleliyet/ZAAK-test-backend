@@ -1,29 +1,19 @@
 package ZAAK.backend.ZAAK_Test.mqtt;
 
-import lombok.Data;
+import lombok.*;
+
+import java.util.Date;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class MqttSensorData {
 
     private String machineId;
+    private String sensorId;
 
-    private String name;
-    private String type;
-    private String location;
+    private Double value;
 
-    private Double temperature;
-    private Double vibration;
-    private Double pressure;
-
-    private String status;
-
-    private String lastMaintenance;
-    private String nextMaintenance;
-    private String installDate;
-
-    private String model;
-    private String manufacturer;
-    private String description;
-
-    private Object timestamp; // can be String or number
+    private Date timestamp; // optional
 }

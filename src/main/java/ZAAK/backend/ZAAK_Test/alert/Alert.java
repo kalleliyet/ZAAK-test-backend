@@ -4,7 +4,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -22,13 +22,15 @@ public class Alert {
     private String machineName;
     private String machineType;
 
+    private String category;
     private String severity;
+
     private String message;
 
     private String sensor;
     private Double sensorValue;
 
-    private Instant timestamp;
+    private Date timestamp;
 
     private boolean visible;
 

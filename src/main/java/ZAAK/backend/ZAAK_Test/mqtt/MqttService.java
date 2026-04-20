@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.Iterator;
 
 @Service
@@ -84,23 +85,22 @@ public class MqttService {
                 return;
             }
 
+            // Extract sensor data
+            String sensorId = firstText(node, "sensorId");
+            Double value = firstDouble(node, "value");
+
+            // Validate required fields
+            if (sensorId == null || value == null) {
+                log.warn("Invalid MQTT message (missing sensorId/value). topic={} payload={}", topic, payload);
+                return;
+            }
+
+            // Build DTO
             MqttSensorData data = new MqttSensorData();
             data.setMachineId(resolvedId);
-
-            data.setName(firstText(node, "name"));
-            data.setType(firstText(node, "type"));
-            data.setLocation(firstText(node, "location"));
-            data.setTemperature(firstDouble(node, "temperature"));
-            data.setVibration(firstDouble(node, "vibration"));
-            data.setPressure(firstDouble(node, "pressure"));
-            data.setStatus(firstText(node, "status"));
-            data.setLastMaintenance(firstText(node, "lastMaintenance"));
-            data.setNextMaintenance(firstText(node, "nextMaintenance"));
-            data.setInstallDate(firstText(node, "installDate"));
-            data.setModel(firstText(node, "model"));
-            data.setManufacturer(firstText(node, "manufacturer"));
-            data.setDescription(firstText(node, "description"));
-            data.setTimestamp(firstTimestamp(node));
+            data.setSensorId(sensorId);
+            data.setValue(value);
+            data.setTimestamp(new Date());
 
             // 🔥 CORE PIPELINE (same as NestJS Subject.next())
             machineService.processSensorData(data);
