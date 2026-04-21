@@ -19,9 +19,8 @@ public class SensorMetric {
     private String machineId;
     private String sensorId;
 
-    private Double minValue;
-    private Double maxValue;
+    private Long bucketStart;
 
-    private Instant windowStart; // start of 5-min window
-    private Instant windowEnd;
+    private Double min;
+    private Double max;
 }

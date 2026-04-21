@@ -1,5 +1,7 @@
 package ZAAK.backend.ZAAK_Test.Redis;
 
+import ZAAK.backend.ZAAK_Test.machine.SensorMetric;
+import ZAAK.backend.ZAAK_Test.machine.SensorMetricRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -13,11 +15,10 @@ import java.util.concurrent.TimeUnit;
 public class RedisSensorService {
 
     private final StringRedisTemplate redisTemplate;
-
+    private final SensorMetricRepository repository;
     private static final long BUCKET_SIZE_MS = 5 * 60 * 1000; // 5 minutes
 
     public void processReading(String machineId, String sensorId, double value) {
-        log.info("machineId:{}, sensorId:{}, value:{}", machineId, sensorId, value);
         long now = System.currentTimeMillis();
 
         // 🔹 1. Store current value
@@ -72,15 +73,22 @@ public class RedisSensorService {
 
         if (minStr != null && maxStr != null) {
 
-            log.info("📊 [5-MIN METRIC] Machine={} Sensor={} WindowStart={} → MIN={} MAX={}",
-                    machineId,
-                    sensorId,
-                    previousBucketStart,
-                    minStr,
-                    maxStr
-            );
+            double min = Double.parseDouble(minStr);
+            double max = Double.parseDouble(maxStr);
 
-            // Optional: delete after logging (if you don't need them anymore)
+            log.info("📊 [5-MIN METRIC] Machine={} Sensor={} WindowStart={} → MIN={} MAX={}",
+                    machineId, sensorId, previousBucketStart, min, max);
+
+            // 🔥 SAVE TO MONGO
+            SensorMetric metric = new SensorMetric();
+            metric.setMachineId(machineId);
+            metric.setSensorId(sensorId);
+            metric.setBucketStart(previousBucketStart);
+            metric.setMin(min);
+            metric.setMax(max);
+
+            repository.save(metric);
+
             redisTemplate.delete(minKey);
             redisTemplate.delete(maxKey);
         }
