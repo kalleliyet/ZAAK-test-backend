@@ -1,4 +1,4 @@
-package ZAAK.backend.ZAAK_Test.machine.threshold;
+package ZAAK.backend.ZAAK_Test.machine.machineType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

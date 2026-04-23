@@ -1,7 +1,7 @@
 package ZAAK.backend.ZAAK_Test.Redis;
 
-import ZAAK.backend.ZAAK_Test.machine.SensorMetric;
-import ZAAK.backend.ZAAK_Test.machine.SensorMetricRepository;
+import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetric;
+import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetricRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;

@@ -1,6 +1,5 @@
-package ZAAK.backend.ZAAK_Test.machine.machineTypeSensor;
+package ZAAK.backend.ZAAK_Test.machine.machineType;
 
-import ZAAK.backend.ZAAK_Test.machine.threshold.Threshold;
 import lombok.*;
 
 @Data

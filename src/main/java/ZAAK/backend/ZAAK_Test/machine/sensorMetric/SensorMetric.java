@@ -1,10 +1,8 @@
-package ZAAK.backend.ZAAK_Test.machine;
+package ZAAK.backend.ZAAK_Test.machine.sensorMetric;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.Instant;
 
 @Data
 @Builder

@@ -17,8 +17,9 @@ public class Machine {
     private String id;
 
     private String name;
+    private String serialNumber;
     private String location;
-    private String status;
+    private MachineStatus status;
 
     private LocalDate installDate;
     private LocalDate lastMaintenance;

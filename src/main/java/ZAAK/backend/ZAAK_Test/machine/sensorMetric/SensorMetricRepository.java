@@ -1,4 +1,4 @@
-package ZAAK.backend.ZAAK_Test.machine;
+package ZAAK.backend.ZAAK_Test.machine.sensorMetric;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 

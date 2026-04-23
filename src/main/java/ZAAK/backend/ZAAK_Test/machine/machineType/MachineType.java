@@ -1,6 +1,5 @@
 package ZAAK.backend.ZAAK_Test.machine.machineType;
 
-import ZAAK.backend.ZAAK_Test.machine.machineTypeSensor.MachineTypeSensor;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -20,5 +19,5 @@ public class MachineType {
     private String name;
     private String description;
 
-    private List<MachineTypeSensor> sensors;
+    private List<MachineTypeSensor> machineTypeSensors;
 }
