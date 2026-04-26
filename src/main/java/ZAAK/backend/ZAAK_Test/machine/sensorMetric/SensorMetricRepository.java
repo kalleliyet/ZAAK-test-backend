@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface SensorMetricRepository extends MongoRepository<SensorMetric, String> {
     List<SensorMetric> findByMachineIdAndSensorIdOrderByBucketStartAsc(String machineId, String sensorId);
+    List<SensorMetric> findByMachineIdOrderByBucketStartAsc(String machineId);
 }

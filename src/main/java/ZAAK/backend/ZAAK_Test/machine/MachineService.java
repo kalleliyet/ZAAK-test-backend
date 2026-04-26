@@ -5,6 +5,9 @@ import ZAAK.backend.ZAAK_Test.alert.AlertService;
 import ZAAK.backend.ZAAK_Test.events.EventsPublisher;
 import ZAAK.backend.ZAAK_Test.machine.machineType.MachineType;
 import ZAAK.backend.ZAAK_Test.machine.machineType.MachineTypeRepository;
+import ZAAK.backend.ZAAK_Test.machine.sensor.SensorWithMetrics;
+import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetric;
+import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetricRepository;
 import ZAAK.backend.ZAAK_Test.mqtt.MqttSensorData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -23,15 +27,100 @@ public class MachineService {
     private final MachineRepository machineRepository;
     private final RedisSensorService redisSensorService;
     private final MachineTypeRepository machineTypeRepository;
+    private final SensorMetricRepository sensorMetricRepository;
 
     private final AlertService alertService;
     private final EventsPublisher publisher;
     private final Map<String, String> statusHistory = new ConcurrentHashMap<>();
 
-    public List<Machine> findAll() {
-        return machineRepository.findAll();
+    public List<MachineDetailsDto> findAllWithDetails() {
+
+        List<Machine> machines = machineRepository.findAll();
+
+        // 🔥 Load all machineTypes once
+        Map<String, MachineType> machineTypeMap =
+                machineTypeRepository.findAll().stream()
+                        .collect(Collectors.toMap(MachineType::getId, mt -> mt));
+
+        return machines.stream()
+                .map(machine -> mapToDetails(machine, machineTypeMap))
+                .toList();
     }
 
+    private MachineDetailsDto mapToDetails(
+            Machine machine,
+            Map<String, MachineType> machineTypeMap
+    ) {
+
+        MachineType machineType = machineTypeMap.get(machine.getMachineTypeId());
+
+        if (machineType == null) {
+            throw new RuntimeException("MachineType not found: " + machine.getMachineTypeId());
+        }
+
+        return MachineDetailsDto.builder()
+                .id(machine.getId())
+                .name(machine.getName())
+                .location(machine.getLocation())
+                .status(machine.getStatus().name())
+
+                .model(machine.getModel())
+                .manufacturer(machine.getManufacturer())
+                .description(machine.getDescription())
+
+                .machineTypeId(machineType.getId())
+                .machineTypeName(machineType.getName())
+                .machineTypeDescription(machineType.getDescription())
+
+                .sensors(machineType.getMachineTypeSensors())
+                .build();
+    }
+
+    public MachineDetailsWithMetrics getMachineDetailsWithMetrics(String machineId) {
+
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new RuntimeException("Machine not found"));
+
+        MachineType machineType = machineTypeRepository
+                .findById(machine.getMachineTypeId())
+                .orElseThrow(() -> new RuntimeException("MachineType not found"));
+
+        // 👉 fetch ALL metrics for this machine (you can limit later)
+        List<SensorMetric> metrics = sensorMetricRepository.findByMachineIdOrderByBucketStartAsc(machineId);
+
+        // 👉 group by sensorId
+        Map<String, List<SensorMetric>> metricsBySensor = metrics.stream()
+                .collect(Collectors.groupingBy(SensorMetric::getSensorId));
+
+        // 👉 enrich sensors
+        List<SensorWithMetrics> sensors = machineType.getMachineTypeSensors()
+                .stream()
+                .map(sensor -> SensorWithMetrics.builder()
+                        .id(sensor.getSensorId())
+                        .name(sensor.getSensorName())
+                        .unit(sensor.getUnit())
+                        .metrics(metricsBySensor.getOrDefault(sensor.getSensorId(), List.of()))
+                        .build()
+                )
+                .toList();
+
+        return MachineDetailsWithMetrics.builder()
+                .id(machine.getId())
+                .name(machine.getName())
+                .location(machine.getLocation())
+                .status(machine.getStatus().name())
+
+                .model(machine.getModel())
+                .manufacturer(machine.getManufacturer())
+                .description(machine.getDescription())
+
+                .machineTypeId(machineType.getId())
+                .machineTypeName(machineType.getName())
+                .machineTypeDescription(machineType.getDescription())
+
+                .sensors(sensors) // ✅ now each sensor has its metrics
+                .build();
+    }
     public void processSensorData(MqttSensorData data) {
 
         redisSensorService.processReading(

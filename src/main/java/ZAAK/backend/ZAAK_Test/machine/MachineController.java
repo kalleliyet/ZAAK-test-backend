@@ -16,9 +16,12 @@ public class MachineController {
     public Machine createMachine(@RequestBody CreateMachineDto request) {
         return machineService.createMachine(request);
     }
-
+    @GetMapping("/{id}/details")
+    public MachineDetailsWithMetrics getMachineDetails(@PathVariable String id) {
+        return machineService.getMachineDetailsWithMetrics(id);
+    }
     @GetMapping
-    public List<Machine> getAllMachines() {
-        return machineService.findAll();
+    public List<MachineDetailsDto> getAllMachines() {
+        return machineService.findAllWithDetails();
     }
 }
