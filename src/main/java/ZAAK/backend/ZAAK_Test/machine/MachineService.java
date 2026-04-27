@@ -2,7 +2,6 @@ package ZAAK.backend.ZAAK_Test.machine;
 
 import ZAAK.backend.ZAAK_Test.Redis.RedisSensorService;
 import ZAAK.backend.ZAAK_Test.alert.AlertService;
-import ZAAK.backend.ZAAK_Test.events.EventsPublisher;
 import ZAAK.backend.ZAAK_Test.machine.machineType.MachineType;
 import ZAAK.backend.ZAAK_Test.machine.machineType.MachineTypeRepository;
 import ZAAK.backend.ZAAK_Test.machine.sensor.SensorWithMetrics;
@@ -30,7 +29,6 @@ public class MachineService {
     private final SensorMetricRepository sensorMetricRepository;
 
     private final AlertService alertService;
-    private final EventsPublisher publisher;
     private final Map<String, String> statusHistory = new ConcurrentHashMap<>();
 
     public List<MachineDetailsDto> findAllWithDetails() {
@@ -63,10 +61,14 @@ public class MachineService {
                 .name(machine.getName())
                 .location(machine.getLocation())
                 .status(machine.getStatus().name())
-
+                .serialNumber(machine.getSerialNumber())
                 .model(machine.getModel())
                 .manufacturer(machine.getManufacturer())
                 .description(machine.getDescription())
+
+                .installDate(machine.getInstallDate())
+                .nextMaintenance(machine.getNextMaintenance())
+                .lastMaintenance(machine.getLastMaintenance())
 
                 .machineTypeId(machineType.getId())
                 .machineTypeName(machineType.getName())
@@ -76,7 +78,7 @@ public class MachineService {
                 .build();
     }
 
-    public MachineDetailsWithMetrics getMachineDetailsWithMetrics(String machineId) {
+    public MachineDetailsWithMetricsDto getMachineDetailsWithMetrics(String machineId) {
 
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new RuntimeException("Machine not found"));
@@ -104,15 +106,20 @@ public class MachineService {
                 )
                 .toList();
 
-        return MachineDetailsWithMetrics.builder()
+        return MachineDetailsWithMetricsDto.builder()
                 .id(machine.getId())
                 .name(machine.getName())
+                .serialNumber(machine.getSerialNumber())
                 .location(machine.getLocation())
                 .status(machine.getStatus().name())
 
                 .model(machine.getModel())
                 .manufacturer(machine.getManufacturer())
                 .description(machine.getDescription())
+
+                .installDate(machine.getInstallDate())
+                .nextMaintenance(machine.getNextMaintenance())
+                .lastMaintenance(machine.getLastMaintenance())
 
                 .machineTypeId(machineType.getId())
                 .machineTypeName(machineType.getName())

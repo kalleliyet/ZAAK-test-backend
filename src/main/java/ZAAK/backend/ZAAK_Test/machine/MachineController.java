@@ -17,7 +17,7 @@ public class MachineController {
         return machineService.createMachine(request);
     }
     @GetMapping("/{id}/details")
-    public MachineDetailsWithMetrics getMachineDetails(@PathVariable String id) {
+    public MachineDetailsWithMetricsDto getMachineDetails(@PathVariable String id) {
         return machineService.getMachineDetailsWithMetrics(id);
     }
     @GetMapping

@@ -2,6 +2,7 @@ package ZAAK.backend.ZAAK_Test.Redis;
 
 import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetric;
 import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetricRepository;
+import ZAAK.backend.ZAAK_Test.websocket.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -16,6 +17,8 @@ public class RedisSensorService {
 
     private final StringRedisTemplate redisTemplate;
     private final SensorMetricRepository repository;
+    private final WebSocketService webSocketService;
+
     private static final long BUCKET_SIZE_MS = 5 * 60 * 1000; // 5 minutes
 
     public void processReading(String machineId, String sensorId, double value) {
@@ -23,6 +26,8 @@ public class RedisSensorService {
 
         // 🔹 1. Store current value
         redisTemplate.opsForValue().set(getCurrentKey(machineId, sensorId), String.valueOf(value));
+
+        webSocketService.sendSensorUpdate(machineId, sensorId, value);
 
         // 🔹 2. Determine current bucket
         long bucketStart = getBucketStart(now);
