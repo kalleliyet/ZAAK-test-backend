@@ -13,4 +13,5 @@ public class MachineTypeSensor {
     private String unit;
 
     private Threshold threshold;
+    private Integer precision;
 }

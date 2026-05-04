@@ -4,8 +4,6 @@ import ZAAK.backend.ZAAK_Test.Redis.RedisSensorService;
 import ZAAK.backend.ZAAK_Test.alert.AlertService;
 import ZAAK.backend.ZAAK_Test.machine.machineType.MachineType;
 import ZAAK.backend.ZAAK_Test.machine.machineType.MachineTypeRepository;
-import ZAAK.backend.ZAAK_Test.machine.sensor.SensorWithMetrics;
-import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetric;
 import ZAAK.backend.ZAAK_Test.machine.sensorMetric.SensorMetricRepository;
 import ZAAK.backend.ZAAK_Test.mqtt.MqttSensorData;
 import lombok.RequiredArgsConstructor;
@@ -41,27 +39,66 @@ public class MachineService {
                         .collect(Collectors.toMap(MachineType::getId, mt -> mt));
 
         return machines.stream()
-                .map(machine -> mapToDetails(machine, machineTypeMap))
+                .map(machine -> {
+                    MachineType mt = machineTypeMap.get(machine.getMachineTypeId());
+                    if (mt == null) {
+                        throw new RuntimeException("MachineType not found: " + machine.getMachineTypeId());
+                    }
+                    return buildBaseDetails(machine, mt);
+                })
                 .toList();
     }
 
-    private MachineDetailsDto mapToDetails(
+
+    public MachineDetailsDto getMachineDetailsWithMetrics(String machineId) {
+
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new RuntimeException("Machine not found"));
+
+        MachineType machineType = machineTypeRepository
+                .findById(machine.getMachineTypeId())
+                .orElseThrow(() -> new RuntimeException("MachineType not found"));
+
+        // ✅ reuse base
+        MachineDetailsDto base = buildBaseDetails(machine, machineType);
+
+
+        // ✅ build final DTO using base
+        return MachineDetailsDto.builder()
+                .id(base.getId())
+                .name(base.getName())
+                .serialNumber(base.getSerialNumber())
+                .location(base.getLocation())
+                .status(base.getStatus())
+
+                .model(base.getModel())
+                .manufacturer(base.getManufacturer())
+                .description(base.getDescription())
+
+                .installDate(base.getInstallDate())
+                .nextMaintenance(base.getNextMaintenance())
+                .lastMaintenance(base.getLastMaintenance())
+
+                .machineTypeId(base.getMachineTypeId())
+                .machineTypeName(base.getMachineTypeName())
+                .machineTypeDescription(base.getMachineTypeDescription())
+
+                .sensors(base.getSensors())
+                .build();
+    }
+
+
+    private MachineDetailsDto buildBaseDetails(
             Machine machine,
-            Map<String, MachineType> machineTypeMap
+            MachineType machineType
     ) {
-
-        MachineType machineType = machineTypeMap.get(machine.getMachineTypeId());
-
-        if (machineType == null) {
-            throw new RuntimeException("MachineType not found: " + machine.getMachineTypeId());
-        }
-
         return MachineDetailsDto.builder()
                 .id(machine.getId())
                 .name(machine.getName())
                 .location(machine.getLocation())
                 .status(machine.getStatus().name())
                 .serialNumber(machine.getSerialNumber())
+
                 .model(machine.getModel())
                 .manufacturer(machine.getManufacturer())
                 .description(machine.getDescription())
@@ -78,56 +115,6 @@ public class MachineService {
                 .build();
     }
 
-    public MachineDetailsWithMetricsDto getMachineDetailsWithMetrics(String machineId) {
-
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new RuntimeException("Machine not found"));
-
-        MachineType machineType = machineTypeRepository
-                .findById(machine.getMachineTypeId())
-                .orElseThrow(() -> new RuntimeException("MachineType not found"));
-
-        // 👉 fetch ALL metrics for this machine (you can limit later)
-        List<SensorMetric> metrics = sensorMetricRepository.findByMachineIdOrderByBucketStartAsc(machineId);
-
-        // 👉 group by sensorId
-        Map<String, List<SensorMetric>> metricsBySensor = metrics.stream()
-                .collect(Collectors.groupingBy(SensorMetric::getSensorId));
-
-        // 👉 enrich sensors
-        List<SensorWithMetrics> sensors = machineType.getMachineTypeSensors()
-                .stream()
-                .map(sensor -> SensorWithMetrics.builder()
-                        .id(sensor.getSensorId())
-                        .name(sensor.getSensorName())
-                        .unit(sensor.getUnit())
-                        .metrics(metricsBySensor.getOrDefault(sensor.getSensorId(), List.of()))
-                        .build()
-                )
-                .toList();
-
-        return MachineDetailsWithMetricsDto.builder()
-                .id(machine.getId())
-                .name(machine.getName())
-                .serialNumber(machine.getSerialNumber())
-                .location(machine.getLocation())
-                .status(machine.getStatus().name())
-
-                .model(machine.getModel())
-                .manufacturer(machine.getManufacturer())
-                .description(machine.getDescription())
-
-                .installDate(machine.getInstallDate())
-                .nextMaintenance(machine.getNextMaintenance())
-                .lastMaintenance(machine.getLastMaintenance())
-
-                .machineTypeId(machineType.getId())
-                .machineTypeName(machineType.getName())
-                .machineTypeDescription(machineType.getDescription())
-
-                .sensors(sensors) // ✅ now each sensor has its metrics
-                .build();
-    }
     public void processSensorData(MqttSensorData data) {
 
         redisSensorService.processReading(

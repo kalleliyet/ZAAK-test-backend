@@ -10,14 +10,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SensorMetricController {
 
-    private final SensorMetricRepository repository;
+    private final SensorMetricService sensorMetricService;
 
-    // 🔥 Get metrics for a sensor (for chart)
     @GetMapping("/machines/{machineId}/sensors/{sensorId}")
     public List<SensorMetric> getMetrics(
             @PathVariable String machineId,
             @PathVariable String sensorId) {
 
-        return repository.findByMachineIdAndSensorIdOrderByBucketStartAsc(machineId, sensorId);
+        return sensorMetricService.getMetrics(machineId, sensorId);
     }
 }

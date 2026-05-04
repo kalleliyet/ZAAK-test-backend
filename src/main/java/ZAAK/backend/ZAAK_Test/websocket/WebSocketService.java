@@ -26,7 +26,6 @@ public class WebSocketService {
         dto.setMachineId(machineId);
         dto.setStatus("running");
         dto.setSensors(new HashMap<>(machineCache.get(machineId)));
-
         messagingTemplate.convertAndSend("/topic/machines", dto);
     }
 }

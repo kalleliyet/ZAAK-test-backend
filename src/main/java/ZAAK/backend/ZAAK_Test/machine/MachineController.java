@@ -16,8 +16,8 @@ public class MachineController {
     public Machine createMachine(@RequestBody CreateMachineDto request) {
         return machineService.createMachine(request);
     }
-    @GetMapping("/{id}/details")
-    public MachineDetailsWithMetricsDto getMachineDetails(@PathVariable String id) {
+    @GetMapping("/{id}")
+    public MachineDetailsDto getMachineDetails(@PathVariable String id) {
         return machineService.getMachineDetailsWithMetrics(id);
     }
     @GetMapping

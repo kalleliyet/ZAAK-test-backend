@@ -19,7 +19,7 @@ public class RedisSensorService {
     private final SensorMetricRepository repository;
     private final WebSocketService webSocketService;
 
-    private static final long BUCKET_SIZE_MS = 5 * 60 * 1000; // 5 minutes
+    private static final long BUCKET_SIZE_MS = 60 * 60 * 1000; // 1 hour
 
     public void processReading(String machineId, String sensorId, double value) {
         long now = System.currentTimeMillis();
